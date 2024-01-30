@@ -5,6 +5,9 @@
 notes:
 abcdefghijkl - each letter will represent a direction on a 3d plane eg (-1,0,1)
 the target will be the actual sequance of amino acids e.g (hpphhphpph)
+TODO:
+need to edit the mutated_genes (in other words the chromosome creation) to have "Self-avoiding walk"
+need to change fitness, fitness function, mutation and crossover
 """
 
 import random
@@ -102,48 +105,10 @@ def main():
                 gnome = Individual.create_gnome()
                 print(gnome)
                 population.append(Individual(gnome)) 
-  
-    while not found: 
-  
-        # sort the population in increasing order of fitness score 
-        population = sorted(population, key = lambda x:x.fitness) 
-  
-        # if the individual having lowest fitness score ie.  
-        # 0 then we know that we have reached to the target 
-        # and break the loop 
-        if population[0].fitness <= 0: 
-            found = True
-            break
-  
-        # Otherwise generate new offsprings for new generation 
-        new_generation = [] 
-  
-        # Perform Elitism, that mean 10% of fittest population 
-        # goes to the next generation 
-        s = int((10*POPULATION_SIZE)/100) 
-        new_generation.extend(population[:s]) 
-  
-        # From 50% of fittest population, Individuals  
-        # will mate to produce offspring 
-        s = int((90*POPULATION_SIZE)/100) 
-        for _ in range(s): 
-            parent1 = random.choice(population[:50]) 
-            parent2 = random.choice(population[:50]) 
-            child = parent1.mate(parent2) 
-            new_generation.append(child) 
-  
-        population = new_generation 
-  
-        print("Generation: {}\tString: {}\tFitness: {}".format(generation, 
-              "".join(population[0].chromosome), 
-              population[0].fitness)) 
-  
-        generation += 1
-  
-      
-    print("Generation: {}\tString: {}\tFitness: {}".format(generation, 
-          "".join(population[0].chromosome), 
-          population[0].fitness)) 
+                
+    population = sorted(population, key = lambda x:x.fitness)
+    print("------------------")
+    print(population[0].chromosome)
   
 if __name__ == '__main__': 
     main() 
