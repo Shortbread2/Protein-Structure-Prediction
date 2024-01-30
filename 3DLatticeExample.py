@@ -2,31 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-def generate_fcc_lattice(a, n):
-    coordinates = []
-
-    for i in range(n):
-        for j in range(n):
-            for k in range(n):
-                coordinates.append([i * a, j * a, k * a])
-                coordinates.append([(i + 0.5) * a, j * a, (k + 0.5) * a])
-                coordinates.append([i * a, (j + 0.5) * a, (k + 0.5) * a])
-                coordinates.append([(i + 0.5) * a, (j + 0.5) * a, k * a])
-
-    return np.array(coordinates)
-
-def generate_protein_structure():
-    protein_coordinates = np.array([(0, 0, 0), (-1, 0, 1), (-1,0,0), (-2,1,0)])
-    return protein_coordinates
-
-a = 1.0  # lattice constant
-n = 5    # number of unit cells along each axis
-
-# Generate FCC lattice coordinates
-fcc_coordinates = generate_fcc_lattice(a, n)
-
 # Generate protein structure coordinates
-protein_coordinates = generate_protein_structure()
+protein_coordinates = np.array([(0, 0, 0), (-1, 0, 1), (-1,0,0), (-2,1,0)])
 
 # Plot the 3D FCC lattice with the protein structure and lines
 fig = plt.figure()
