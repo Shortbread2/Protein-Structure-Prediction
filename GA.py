@@ -13,7 +13,7 @@ need to change fitness, fitness function, mutation and crossover
 import random
   
 # Number of individuals in each generation 
-POPULATION_SIZE = 100
+POPULATION_SIZE = 10
   
 # Valid genes 
 GENES = 'abcdefghijkl'
@@ -25,8 +25,9 @@ class Individual(object):
     ''' 
     Class representing individual in population 
     '''
-    def __init__(self, chromosome): 
-        self.chromosome = chromosome  
+    def __init__(self, chromosome,coordinates): 
+        self.chromosome = chromosome
+        self.coordinates = coordinates 
         self.fitness = self.cal_fitness() 
   
     @classmethod
@@ -78,7 +79,8 @@ class Individual(object):
         # generated chromosome for offspring 
         return Individual(child_chromosome) 
   
-    def cal_fitness(self): 
+    def cal_fitness(self):
+        print("TODO-fitnessArea") 
         ''' 
         Calculate fitness score, it is the number of 
         characters in string which differ from target 
@@ -93,22 +95,47 @@ class Individual(object):
 # Driver code 
 def main(): 
     global POPULATION_SIZE 
+    coordinates = {
+        'A': (1, 1, 0),
+        'B': (-1, -1, 0),
+        'C': (-1, 1, 0),
+        'D': (1, -1, 0),
+        'E': (0, 1, 1),
+        'F': (0, -1, -1),
+        'G': (0, 1, -1),
+        'H': (0, -1, 1),
+        'I': (-1, 0, -1),
+        'J': (1, 0, 1),
+        'K': (-1, 0, 1),
+        'L': (1, 0, -1),
+    }
   
     #current generation 
     generation = 1
   
     found = False
     population = [] 
+    tempCoordArray = []
   
     # create initial population 
     for _ in range(POPULATION_SIZE): 
                 gnome = Individual.create_gnome()
                 print(gnome)
-                population.append(Individual(gnome)) 
+                for char in gnome:
+                    #print(coordinates[char.upper()])
+                    if tempCoordArray == []:
+                        tempCoordArray.append(coordinates[char.upper()])
+                    else:
+                        tempCoordArray.append(tuple(map(lambda i, j: i + j, tempCoordArray[-1], coordinates[char.upper()])))
+                print(tempCoordArray)
+                population.append(Individual(gnome,tempCoordArray))
+                tempCoordArray = []
                 
     population = sorted(population, key = lambda x:x.fitness)
     print("------------------")
     print(population[0].chromosome)
+    print(population[0].coordinates)
+    print(population[0].fitness)
   
 if __name__ == '__main__': 
     main() 
