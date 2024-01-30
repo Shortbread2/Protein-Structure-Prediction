@@ -84,18 +84,28 @@ class Individual(object):
   
     def cal_fitness(self):
         print("TODO-fitnessArea") 
-        ''' 
-        Calculate fitness score, it is the number of 
-        characters in string which differ from target 
-        string. 
+        '''
+        AA: Amino acid array
+        N: No. of amino acids in the sequence
+        
+        AA ←getAminoAcid(X1);
+        for (i ← 0 to N - 1) do
+            for (j ← i + 2 to N - 1) do
+                if (AcidT ype[i] = AcidT ype[j] = 'H') then
+                    pointI ← AA[i];
+                    pointJ ← AA[j];
+                    sqrD ← getSqrDist(pointI, pointJ);
+                    if (sqrD = 2) then
+                        fitness ← fitness - 1;
+        update(X1, fitness);
+        return X1;
         '''
         global TARGET 
         fitness = 0
         for gs, gt in zip(self.chromosome, TARGET): 
             if gs != gt: fitness+= 1
-        return fitness 
-  
-# Driver code 
+        return fitness
+    
 def main(): 
     global POPULATION_SIZE 
     coordinates = {
