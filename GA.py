@@ -10,6 +10,7 @@ need to edit the create_a_gene (in other words the chromosome creation) to have 
 need to change fitness, fitness function, mutation and crossover
 """
 
+import sys
 import random
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,13 +18,16 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.spatial import distance
   
 # Number of individuals in each generation 
-POPULATION_SIZE = 100
+POPULATION_SIZE = 1
   
 # the valid letters that makes up a gene (when a gene is created it will check this varaible for what letters its allowed to have) 
 GENES = 'abcdefghijkl'
   
 # the array of amino acids, only in Hydrophobic or polar
 HP_AMINO_ACID = "hpphphhphhp"
+
+# for debuging
+DEBUG_MODE = False
   
 class Individual(object): 
     ''' 
@@ -113,21 +117,81 @@ class Individual(object):
         for i in range(len(self.coordinates)):
             for j in range(i + 1, len(self.coordinates)):
                 if  self.coordinates[i] ==  self.coordinates[j]:
-                    print("overlap with :", i ," and ", j)
+                    if DEBUG_MODE: print("overlap with :", i ," and ", j)
                     fitness -= 5
         
+        # checks if any h amino acids are too close not including the chemically bonded h's
         for i in range(gnome_len):
             for j in range(i + 2, gnome_len):
                 if (HP_AMINO_ACID[i] == 'h') & (HP_AMINO_ACID[i] == HP_AMINO_ACID[j]):
                     sqrD = distance.euclidean(self.coordinates[i], self.coordinates[j])
                     if sqrD <= 2:
-                        print("index1: ", i, "index2: ", j)
+                        if DEBUG_MODE: print("index1: ", i, "index2: ", j)
                         fitness -= 1
         
         return fitness
     
-def main(): 
-    global POPULATION_SIZE 
+def main():
+    
+    if "--help" in sys.argv[1:]:
+        print("-----------------")
+        print("Commands: --help, input:hpphphphphp (for example), input:random (this will prompt a user input for a number which can only be higher than 2)")
+        print("population: (after this command enter in a number > 0 without spaces e.g. population:20), -debug (enables debug messages and stuff)")
+        print("\nwill add feature to add option to use amino acid names for input instead of just having the option to enter in the denotions h or p")
+        print("-----------------")
+        sys.exit(0)
+        
+    global HP_AMINO_ACID
+    global POPULATION_SIZE
+    global DEBUG_MODE
+    
+    for command in sys.argv[1:]:
+        if DEBUG_MODE: print(command)
+        validCommand = False
+        if "input:" in command:
+            validCommand = True
+            value = command.split(":")[1].lower()
+            if value == "random":
+                while True:
+                    userNumInput = input("\nplease enter in how many amino acids you want to generate\n")
+                    if userNumInput.isdigit():
+                        userNumInput = int(userNumInput)
+                        if userNumInput <= 2:
+                            print("invalid user input, please enter a number greater than 2")
+                        else:
+                            HP_AMINO_ACID = ''.join(random.choice(['p', 'h']) for _ in range(userNumInput))
+                            break
+                    else:
+                        print("invalid user input, only numbers are allowed")
+            else:
+                print(value)
+                if all(char in {'p', 'h'} for char in value):
+                    HP_AMINO_ACID = value
+                else:
+                    print("Invalid input. Please enter 'p' or 'h'.")
+                    sys.exit(0)
+        if "population:" in command:
+            validCommand = True
+            value = command.split(":")[1].lower()
+            if value.isdigit():
+                value = int(value)
+                if value < 1:
+                    print("invalid population input, please enter a number greater than 0")
+                    sys.exit(0)
+                else:
+                    POPULATION_SIZE = value
+                    continue
+            else:
+                print("invalid population input, only numbers are allowed")
+                sys.exit(0)
+        if "-debug" in command:
+            validCommand = True
+            DEBUG_MODE = True
+            print(DEBUG_MODE)
+        if not validCommand:
+            print("invalid command:", command)
+            sys.exit(0)
+
     coordinates = {
         'A': (1, 1, 0),
         'B': (-1, -1, 0),
@@ -152,22 +216,23 @@ def main():
     # create initial population 
     for _ in range(POPULATION_SIZE): 
                 gnome = Individual.create_gnome()
-                print(gnome)
+                if DEBUG_MODE: print(gnome)
                 for char in gnome:
                     #print(coordinates[char.upper()])
                     if tempCoordArray == []:
                         tempCoordArray.append(coordinates[char.upper()])
                     else:
                         tempCoordArray.append(tuple(map(lambda i, j: i + j, tempCoordArray[-1], coordinates[char.upper()])))
-                print(tempCoordArray)
+                if DEBUG_MODE: print(tempCoordArray)
                 population.append(Individual(gnome,tempCoordArray))
                 tempCoordArray = []
                 
     population = sorted(population, key = lambda x:-x.fitness)
-    print("------------------")
-    print(population[0].chromosome)
-    print(population[0].coordinates)
-    print(population[0].fitness)
+    if DEBUG_MODE == True:
+        print("------------------")
+        print(population[0].chromosome)
+        print(population[0].coordinates)
+        print(population[0].fitness)
     
     generate_protein_structure(population[0].coordinates)
     
