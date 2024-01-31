@@ -4,9 +4,9 @@
 """
 notes:
 abcdefghijkl - each letter will represent a direction on a 3d plane eg (-1,0,1)
-the target will be the actual sequance of amino acids e.g (hpphhphpph)
+the HP_AMINO_ACID will be the actual sequance of amino acids e.g (hpphhphpph)
 TODO:
-need to edit the mutated_genes (in other words the chromosome creation) to have "Self-avoiding walk"
+need to edit the create_a_gene (in other words the chromosome creation) to have "Self-avoiding walk"
 need to change fitness, fitness function, mutation and crossover
 """
 
@@ -14,15 +14,16 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from scipy.spatial import distance
   
 # Number of individuals in each generation 
-POPULATION_SIZE = 10
+POPULATION_SIZE = 100
   
-# Valid genes 
+# the valid letters that makes up a gene (when a gene is created it will check this varaible for what letters its allowed to have) 
 GENES = 'abcdefghijkl'
   
-# Target string to be generated 
-TARGET = "abfghijkl"
+# the array of amino acids, only in Hydrophobic or polar
+HP_AMINO_ACID = "hpphphhphhp"
   
 class Individual(object): 
     ''' 
@@ -34,9 +35,9 @@ class Individual(object):
         self.fitness = self.cal_fitness() 
   
     @classmethod
-    def mutated_genes(self): 
+    def create_a_gene(self): 
         ''' 
-        create random genes for mutation 
+        this actually builds the gene/ individual 
         '''
         global GENES 
         gene = random.choice(GENES) 
@@ -47,11 +48,12 @@ class Individual(object):
         ''' 
         create chromosome or string of genes 
         '''
-        global TARGET 
-        gnome_len = len(TARGET) 
-        return [self.mutated_genes() for _ in range(gnome_len)] 
+        global HP_AMINO_ACID 
+        gnome_len = len(HP_AMINO_ACID) 
+        return [self.create_a_gene() for _ in range(gnome_len)] 
   
     def mate(self, par2): 
+        print("Mate chromosome")
         ''' 
         Perform mating and produce new offspring 
         '''
@@ -76,15 +78,17 @@ class Individual(object):
             # otherwise insert random gene(mutate),  
             # for maintaining diversity 
             else: 
-                child_chromosome.append(self.mutated_genes()) 
+                child_chromosome.append(self.create_a_gene()) 
   
         # create new Individual(offspring) using  
         # generated chromosome for offspring 
         return Individual(child_chromosome) 
   
     def cal_fitness(self):
-        print("TODO-fitnessArea") 
         '''
+        psudo code from the paper 'An Enhanced Genetic Algorithm for Ab Initio Protein Structure Prediction'
+        
+        
         AA: Amino acid array
         N: No. of amino acids in the sequence
         
@@ -100,10 +104,26 @@ class Individual(object):
         update(X1, fitness);
         return X1;
         '''
-        global TARGET 
+        global HP_AMINO_ACID
+        gnome_len = len(HP_AMINO_ACID)
         fitness = 0
-        for gs, gt in zip(self.chromosome, TARGET): 
-            if gs != gt: fitness+= 1
+        
+        
+        #code to offset lack of self avoiding walk for now, gives a penalty to coordinates that collide (code is temporary)
+        for i in range(len(self.coordinates)):
+            for j in range(i + 1, len(self.coordinates)):
+                if  self.coordinates[i] ==  self.coordinates[j]:
+                    print("overlap with :", i ," and ", j)
+                    fitness -= 5
+        
+        for i in range(gnome_len):
+            for j in range(i + 2, gnome_len):
+                if (HP_AMINO_ACID[i] == 'h') & (HP_AMINO_ACID[i] == HP_AMINO_ACID[j]):
+                    sqrD = distance.euclidean(self.coordinates[i], self.coordinates[j])
+                    if sqrD <= 2:
+                        print("index1: ", i, "index2: ", j)
+                        fitness -= 1
+        
         return fitness
     
 def main(): 
@@ -123,7 +143,6 @@ def main():
         'L': (1, 0, -1),
     }
   
-    #current generation 
     generation = 1
   
     found = False
@@ -144,7 +163,7 @@ def main():
                 population.append(Individual(gnome,tempCoordArray))
                 tempCoordArray = []
                 
-    population = sorted(population, key = lambda x:x.fitness)
+    population = sorted(population, key = lambda x:-x.fitness)
     print("------------------")
     print(population[0].chromosome)
     print(population[0].coordinates)
@@ -154,26 +173,33 @@ def main():
     
 
 def generate_protein_structure(coordinates):
-    # Generate protein structure coordinates
-    protein_coordinates = np.array(coordinates)
+    global HP_AMINO_ACID
+    # Define amino acid colors and markers based on the HP amino acids
+    aa_settings = {'h': {'color': 'red', 'marker': '^', 'label': 'Hydrophobic'},
+                   'p': {'color': 'blue', 'marker': 'o', 'label': 'Polar'}}
 
-    # Plot the 3D FCC lattice with the protein structure and lines
+    # Plot the 3D structure
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(protein_coordinates[:, 0], protein_coordinates[:, 1], protein_coordinates[:, 2], s=100, c='blue', marker='^', label='Protein')
+
+    for i, aa_type in enumerate(HP_AMINO_ACID):
+        x, y, z = coordinates[i]
+        settings = aa_settings[aa_type]
+        ax.scatter(x, y, z, s=100, c=settings['color'], marker=settings['marker'], label=settings['label'])
 
     # Draw lines between consecutive protein coordinates
-    for i in range(len(protein_coordinates) - 1):
-        ax.plot([protein_coordinates[i, 0], protein_coordinates[i + 1, 0]],
-                [protein_coordinates[i, 1], protein_coordinates[i + 1, 1]],
-                [protein_coordinates[i, 2], protein_coordinates[i + 1, 2]], c='blue')
+    for i in range(len(coordinates) - 1):
+        ax.plot([coordinates[i][0], coordinates[i + 1][0]],
+                [coordinates[i][1], coordinates[i + 1][1]],
+                [coordinates[i][2], coordinates[i + 1][2]], c='blue', linestyle='dashed')
 
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
-    ax.set_title('3D FCC Lattice with Protein and Lines')
-    ax.legend()
+    ax.set_title('3D Protein Structure')
+    ax.legend(['Polar', 'Hydrophobic'])
     plt.show()
+
 
 if __name__ == '__main__': 
     main() 
