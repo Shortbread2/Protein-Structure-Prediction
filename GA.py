@@ -7,7 +7,8 @@ abcdefghijkl - each letter will represent a direction on a 3d plane eg (-1,0,1)
 the HP_AMINO_ACID will be the actual sequance of amino acids e.g (hpphhphpph)
 TODO:
 need to edit the create_a_gene (in other words the chromosome creation) to have "Self-avoiding walk"
-need to change fitness, fitness function, mutation and crossover
+program now works but takes too long due to crossover overiding good fitness in protein up to a certain part
+when printing result of generations for some reason the coordinates is always the same if fitness is the same as prev gen even tho string being shown is different!!!
 """
 
 import sys
@@ -18,7 +19,10 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.spatial import distance
   
 # Number of individuals in each generation 
-POPULATION_SIZE = 1
+POPULATION_SIZE = 10
+
+# Number of individuals in each generation 
+ITERATIONS = 10000
   
 # the valid letters that makes up a gene (when a gene is created it will check this varaible for what letters its allowed to have) 
 GENES = 'abcdefghijkl'
@@ -56,37 +60,28 @@ class Individual(object):
         gnome_len = len(HP_AMINO_ACID) 
         return [self.create_a_gene() for _ in range(gnome_len)] 
   
-    def mate(self, par2): 
-        print("Mate chromosome")
-        ''' 
-        Perform mating and produce new offspring 
-        '''
-  
-        # chromosome for offspring 
-        child_chromosome = [] 
-        for gp1, gp2 in zip(self.chromosome, par2.chromosome):     
-  
-            # random probability   
-            prob = random.random() 
-  
-            # if prob is less than 0.45, insert gene 
-            # from parent 1  
-            if prob < 0.45: 
-                child_chromosome.append(gp1) 
-  
-            # if prob is between 0.45 and 0.90, insert 
-            # gene from parent 2 
-            elif prob < 0.90: 
-                child_chromosome.append(gp2) 
-  
-            # otherwise insert random gene(mutate),  
-            # for maintaining diversity 
-            else: 
-                child_chromosome.append(self.create_a_gene()) 
-  
-        # create new Individual(offspring) using  
-        # generated chromosome for offspring 
-        return Individual(child_chromosome) 
+    def crossover(self, parent2): 
+        
+        # initialize child
+        child_chromosome = self.chromosome
+        
+        crossover_point = random.randint(len(self.chromosome)*0.3,len(self.chromosome)-2)
+        
+        if(DEBUG_MODE):
+            print("---------crossover--------->")
+            print("crossover point:", crossover_point)
+            print("input:")
+            print(self.chromosome)
+            print(parent2.chromosome)
+        
+        for i in range(crossover_point,len(self.chromosome)):
+            child_chromosome[i] = parent2.chromosome[i]
+        
+        if(DEBUG_MODE):
+            print("output:")
+            print(child_chromosome)
+        
+        return child_chromosome
   
     def cal_fitness(self):
         '''
@@ -226,16 +221,67 @@ def main():
                 if DEBUG_MODE: print(tempCoordArray)
                 population.append(Individual(gnome,tempCoordArray))
                 tempCoordArray = []
-                
-    population = sorted(population, key = lambda x:-x.fitness)
-    if DEBUG_MODE == True:
-        print("------------------")
-        print(population[0].chromosome)
-        print(population[0].coordinates)
-        print(population[0].fitness)
+        
+    while ITERATIONS > generation:
+  
+        # sort the population in increasing order of fitness score 
+        population = sorted(population, key = lambda x:-x.fitness)
+        if DEBUG_MODE == True:
+            print("------------------")
+            print(population[0].chromosome)
+            print(population[0].coordinates)
+            print(population[0].fitness)
+  
+        if population[0].fitness == 0: break
+  
+        new_generation = []
+        tempCoordArray = []
+  
+        # Perform Elitism, that mean 10% of fittest population 
+        # goes to the next generation 
+        elitism_size = int((10*POPULATION_SIZE)/100) 
+        new_generation.extend(population[:elitism_size]) 
+  
+        s = int((90*POPULATION_SIZE)/100) 
+        for _ in range(s): 
+            parent1 = random.choice(population[:50]) 
+            parent2 = random.choice(population[:50]) 
+            #child_gnome = parent1.crossover(parent2)
+            child_gnome = parent1.chromosome
+            mutation_rate = random.random()
+            if (mutation_rate > 0.75): child_gnome = mutation(child_gnome)
+            for char in child_gnome:
+                #print(coordinates[char.upper()])
+                if tempCoordArray == []:
+                    tempCoordArray.append(coordinates[char.upper()])
+                else:
+                    tempCoordArray.append(tuple(map(lambda i, j: i + j, tempCoordArray[-1], coordinates[char.upper()])))
+            if DEBUG_MODE: print(tempCoordArray)
+            new_generation.append(Individual(child_gnome,tempCoordArray))
+            tempCoordArray = []
+  
+        population = new_generation
+  
+        print("Generation: {}\tString: {}\tFitness: {}".format(generation, "".join(population[0].chromosome), population[0].fitness))
+        print("Coordinates: ",population[0].coordinates)
+  
+        generation += 1
+  
+      
+    print("Generation: {}\tString: {}\tFitness: {}".format(generation, "".join(population[0].chromosome), population[0].fitness))
+    print("Coordinates: ",population[0].coordinates)
     
     generate_protein_structure(population[0].coordinates)
+
+def mutation(chromosome): 
     
+    mutation_point = random.randint(0,len(chromosome)-1)
+    chromosome[mutation_point] = random.choice(GENES.replace(chromosome[mutation_point],""))
+    if(DEBUG_MODE):
+        print("mutation point: ",mutation_point)
+        print(chromosome)
+        
+    return chromosome    
 
 def generate_protein_structure(coordinates):
     global HP_AMINO_ACID
